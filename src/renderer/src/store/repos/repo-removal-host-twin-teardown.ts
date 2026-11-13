@@ -120,7 +120,16 @@ export function closeRemovedHostTwinState(
     // Why: a parked or restored pane has no exit callback left to clear these; shared PTYs are not in the plans' lists.
     set((state) => ({
       suppressedPtyExitIds: omitRecordKeys(state.suppressedPtyExitIds, retiredPtyIds),
-      pendingPaneAccountRestarts: omitRecordKeys(state.pendingPaneAccountRestarts, retiredPtyIds),
+      paneAccountRestarts: Object.fromEntries(
+        Object.entries(state.paneAccountRestarts).filter(([key, request]) =>
+          typeof request === 'string'
+            ? !retiredPtyIds.has(key)
+            : !(
+                request.hostId === hostId &&
+                (terminalTabIds.has(request.tabId) || retiredPtyIds.has(request.oldPtyId))
+              )
+        )
+      ),
       codexRestartNoticeByPtyId: omitRecordKeys(state.codexRestartNoticeByPtyId, retiredPtyIds)
     }))
     // Why: a pending chat's tab can already be gone, so its launch is cancelled through the registry.
